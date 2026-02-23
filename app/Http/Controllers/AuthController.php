@@ -16,8 +16,16 @@ class AuthController extends Controller
         $validated = $request->validate([
             'name' => 'required|string',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6'
+            'password' => 'required|string|min:6',
+            'user_image' =>'nullable|image|max:255|mimes:jpeg,png,jpg'
+           
         ]);
+        if($request->has('role_id')){
+            $role_id = $request->role_id;
+
+        }else{
+            $role_id = Role::where('name', 'user')->first()->id;
+        }
 
         $user = new User();
         $user->name = $validated['name'];
