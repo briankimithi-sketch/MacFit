@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('usage')->nullable();       
-            $table->integer('model_number')->default(1);
+            $table->integer('model_no')->default(1);
             $table->string('value')->default('Good'); 
             $table->text('status')->nullable();
             $table->timestamps();

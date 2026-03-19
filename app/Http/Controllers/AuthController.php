@@ -2,77 +2,143 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Role;
+use App\Mail\OtpMail;
+// use App\Models\Role;
 use App\Models\User;
+use App\Models\UserOtp;
+use App\Notifications\VerifyEmailNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
-    {
+    public function register(Request $request){
         $validated = $request->validate([
-            'name' => 'required|string',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
-            'user_image' =>'nullable|image|max:255|mimes:jpeg,png,jpg'
-           
+            'name'=>'required|string|max:40',
+            'email'=>'required|email|unique:users,email',
+            'password'=>'required|string|min:4|max:15',
+            'user_image'=>'nullable|image|mimes:jpeg,png,jpg',
+            'role_id'=>'required|integer|exists:roles,id',
+            'phoneNumber'=>'nullable|string',
+            'gender'=>'nullable|string',
+            'dob'=>'nullable|string',
+            'gymLocation'=>'nullable|string',
         ]);
-        if($request->has('role_id')){
-            $role_id = $request->role_id;
 
-        }else{
-            $role_id = Role::where('name', 'user')->first()->id;
-        }
+        // if($request->role_id){
+        //     $role_id = $request->role_id;
+        //       } else{
+        //       $role = Role::where('name', 'User')->first();
+        //       $role_id = $role->id;
+        // }
 
         $user = new User();
         $user->name = $validated['name'];
         $user->email = $validated['email'];
         $user->password = Hash::make($validated['password']);
-
-        try {
-            $user->save();
-            return response()->json($user);
-        } catch (\Exception $exception) {
-            return response()->json([
-                'error' => 'Failed to register user',
-                'message' => $exception->getMessage()
-            ]);
+        $user->role_id = $validated['role_id'];
+        $user->phoneNumber = $validated['phoneNumber'];
+        $user->gender = $validated['gender'];
+        $user->dob = $validated['dob'];
+        $user->gymLocation = $validated['gymLocation'];
+        $user->is_active = true; //to delete later
+        
+         
+       
+        if($request->hasFile('user_image')){
+            $filename = $request->file('user_image')->store('users' ,'public');
+              }
+        else{
+             $filename= null;
         }
-    }
+       $user->user_image = $filename;
 
-    public function login(Request $request)
-    {
-        $validated = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string|min:4'
+       try{
+        $user->save();
+
+        
+    //     $signedUrl = URL::temporarySignedRoute(
+    //       'verification.verify',
+    //       now()->addMinutes(60),
+    //       [
+    //         'id'=>$user->id,
+    //         'hash'=>sha1($user->email)
+    //       ]
+    // );
+
+    // $user->notify(new VerifyEmailNotification($signedUrl));
+
+    // return response()->json([
+    //     'message'=>'Verification Email resent successfully.'
+    // ], 200);
+
+     $token = $user->createToken('auth-token')->plainTextToken;
+            return response()->json([
+                'message'=> 'Registration Successful!',
+                'user' => $user,
+                'token' => $token,
+            ], 201);
+  
+  }  
+       catch(\Exception $exception){
+        return response()->json([
+            'error'=>"Registration Failed!",
+            'messsage'=>$exception->getMessage()
+        ], 500);
+       }
+}
+    
+    public function login(Request $request){
+          $validated = $request->validate([
+            'email'=>'required|email',
+            'password'=>'required|string|min:4'
         ]);
 
         $user = User::where('email', $validated['email'])->first();
 
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
-            throw ValidationException::withMessages([
-                'error' => ['Invalid credentials']
-            ]);
+        if(!$user || !Hash::check($validated ['password'], $user->password)){
+            throw ValidationException::withMessages ([
+            'error'=>'Invalid Credentials'], 401);
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'user' => $user,
-            'message' => 'Login successful',
-            'token' => $token
-        ], 200);
-    }
-    public function logout(Request $request)
-{
-    $request->user()->currentAccessToken()->delete();
-
+ if(!$user->is_active){
     return response()->json([
-        'message' => 'Logged out successfully'
-    ]);
-}
+        'message'=>'Your account is not Active Please Verify Your Email Address'
+    ],403);
+ }
+            // $otp = rand(100000, 999999);
+            // $expiresAt = now()->addMinutes(5);
 
+            // UserOtp::updateOrCreate([
+            //     'user_id'=>$user->id,
+            //     'otp'=>$otp,
+            //     'expires_at'=>$expiresAt,
+            // ]);
+
+            // Mail::to($user->email)->send(new OtpMail($otp));
+
+            // return response()->json([
+            //     'message'=>'OTP  Sent to your email. Please verify to complete login',
+            // ], 201);
+
+            $token = $user->createToken('auth-token')->plainTextToken;
+            return response()->json([
+                'message'=> 'Registration Successful!',
+                'user' => $user,
+                'token' => $token,
+            ], 201);
+    }
+
+    public function logout(Request $request){
+        $request->user()->currentAccessToken()->delete();
+        return response()->json('Logout Successful.');
+    }
+
+    public function userInfo(){
+        return response()->json(auth()->user());
+    }
 }

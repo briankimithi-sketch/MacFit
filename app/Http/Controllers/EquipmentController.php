@@ -12,7 +12,7 @@ class EquipmentController extends Controller
         $validated = $request->validate([
             'name'=>'required|string',
             'usage'=>'required|string',
-            'model_no'=>'required|integer',
+            'model_no'=>'required|numeric',
             'value'=>'string',
             'status'=>'required'
         ]);

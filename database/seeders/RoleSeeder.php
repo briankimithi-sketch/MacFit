@@ -23,16 +23,18 @@ class RoleSeeder extends Seeder
             'description' => 'This is a trainer']);
 
  
-        Role::create([
-            'name' => 'User',
-            'description' => 'This is a normal user']);
-
- 
+        
         Role::create([
             'name' => 'Staff',
-            'description' => 'This is a staff member'
+            'description' => 'This is a staff member' ]);
 
-        ]);
+            
+        Role::create([
+                    'name' => 'User',
+                    'description' => 'This is a normal user']);
+
+        
+       
 
     }
 }
