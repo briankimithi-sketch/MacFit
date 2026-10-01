@@ -1,6 +1,7 @@
 pipeline {
 agent {
 node {
+label 'built-in'
 customWorkspace '/home/brian.kimithi/jenkins-workspace/MacFit-Pipeline'
 }
 }
@@ -69,6 +70,5 @@ post {
         echo 'MacFit CI pipeline failed.'
     }
 }
-
 
 }
