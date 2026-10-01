@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'macfit-ci:latest'
-            args '-v $HOME/.composer:/tmp/composer'
-        }
-    }
+    agent any
 
     stages {
 
@@ -16,41 +11,47 @@ pipeline {
 
         stage('Install PHP Dependencies') {
             steps {
-                sh 'composer install --no-interaction --prefer-dist'
+                sh 'docker run --rm -v "$PWD":/app -w /app macfit-ci:latest composer install --no-interaction --prefer-dist'
             }
         }
 
         stage('Configure Laravel') {
             steps {
                 sh '''
-                    cp .env.example .env
-                    touch database/database.sqlite
-                    php artisan key:generate
+                    docker run --rm \
+                        -v "$PWD":/app \
+                        -w /app \
+                        macfit-ci:latest \
+                        bash -lc '
+                            cp .env.example .env
+                            touch database/database.sqlite
+                            php artisan key:generate
+                        '
                 '''
             }
         }
 
         stage('Database Setup') {
             steps {
-                sh 'php artisan migrate --force'
+                sh 'docker run --rm -v "$PWD":/app -w /app macfit-ci:latest php artisan migrate --force'
             }
         }
 
         stage('Run Tests') {
             steps {
-                sh 'php artisan test'
+                sh 'docker run --rm -v "$PWD":/app -w /app macfit-ci:latest php artisan test'
             }
         }
 
         stage('Install Node Dependencies') {
             steps {
-                sh 'npm install'
+                sh 'docker run --rm -v "$PWD":/app -w /app macfit-ci:latest npm install'
             }
         }
 
         stage('Build Frontend') {
             steps {
-                sh 'npm run build'
+                sh 'docker run --rm -v "$PWD":/app -w /app macfit-ci:latest npm run build'
             }
         }
     }
