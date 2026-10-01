@@ -1,5 +1,9 @@
 pipeline {
-    agent any
+    agent {
+	node{
+		customWorkspace`/home/brian.kimithi/jenkins-workspace/MacFit-Pipeline`	
+}
+}
 
     stages {
 
